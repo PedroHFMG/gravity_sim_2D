@@ -25,7 +25,7 @@ func _physics_process(delta: float) -> void:
 func gravidade(p1, p2, delta):
 	var distance = (p2.position - p1.position).length()
 	
-	var newton_eq = G * (p1.mass * p2.mass / distance * distance)
+	var newton_eq = G * (p1.mass * p2.mass) / (distance * distance)
 	
 	var force_direction = (p2.position - p1.position).normalized()
 	
