@@ -1,0 +1,74 @@
+[gd_scene load_steps=3 format=3 uid="uid://cv0bk3krausgj"]
+
+[ext_resource type="PackedScene" uid="uid://bfs60xnrwxfar" path="res://planet.tscn" id="2_h2yge"]
+
+[sub_resource type="GDScript" id="GDScript_ig7tw"]
+script/source = "extends Node2D
+
+var planets = []
+var frame_count := 0
+const G = 10550
+
+func _ready() -> void:
+	planets = $Planetas.get_children()
+	
+func _physics_process(delta: float) -> void:
+	for i in range(planets.size()):
+		for j in range(i + 1, planets.size()):
+			gravidade(planets[i], planets[j], delta)
+	
+	for planet in planets:
+		if planet.get(\"fixed\") == true:
+			planet.velocity = Vector2.ZERO
+		planet.position += planet.velocity * delta
+		
+func gravidade(p1, p2, delta):
+	var distance = (p2.position - p1.position).length()
+	
+	var newton_eq = G * (p1.mass * p2.mass / distance * distance)
+	
+	var force_direction = (p2.position - p1.position).normalized()
+	
+	var acceleration1 = force_direction * newton_eq / p1.mass
+	var acceleration2 = -force_direction * newton_eq / p2.mass
+	
+	p1.velocity += acceleration1 * delta
+	p2.velocity += acceleration2 * delta
+	
+	$Planetas/Planeta1/Line2D.points = [Vector2.ZERO, acceleration1]
+	$Planetas/Planeta2/Line2D.points = [Vector2.ZERO, acceleration2]
+"
+
+[node name="Node2D" type="Node2D"]
+script = SubResource("GDScript_ig7tw")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Planetas" type="Node2D" parent="."]
+
+[node name="Planeta1" parent="Planetas" instance=ExtResource("2_h2yge")]
+position = Vector2(640, 384)
+mass = 105
+velocity = Vector2(-30, 30)
+
+[node name="Line2D" type="Line2D" parent="Planetas/Planeta1"]
+width = 2.0
+default_color = Color(0.92549, 0, 0.678431, 1)
+
+[node name="Planeta2" parent="Planetas" instance=ExtResource("2_h2yge")]
+position = Vector2(448, 192)
+mass = 105
+velocity = Vector2(30, -30)
+
+[node name="Line2D" type="Line2D" parent="Planetas/Planeta2"]
+width = 2.0
+default_color = Color(0.92549, 0, 0.678431, 1)
