@@ -1,5 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://cv0bk3krausgj"]
+[gd_scene load_steps=4 format=3 uid="uid://cv0bk3krausgj"]
 
+[ext_resource type="PackedScene" uid="uid://b3uu1luh6551f" path="res://marker.tscn" id="1_0xm2m"]
 [ext_resource type="PackedScene" uid="uid://bfs60xnrwxfar" path="res://planet.tscn" id="2_h2yge"]
 
 [sub_resource type="GDScript" id="GDScript_ig7tw"]
@@ -13,8 +14,12 @@ func _ready() -> void:
 	planets = $Planetas.get_children()
 	
 func _physics_process(delta: float) -> void:
+	#Calcula a gravidade em PARES >>sem repetição<<:
+	#Planeta principal do loop:
 	for i in range(planets.size()):
+		 #Planetas que terão os cálculos feitos com base no planeta principal:
 		for j in range(i + 1, planets.size()):
+			#Aplicando a função gravidade com os planetas dos índices acima:
 			gravidade(planets[i], planets[j], delta)
 	
 	for planet in planets:
@@ -22,25 +27,55 @@ func _physics_process(delta: float) -> void:
 			planet.velocity = Vector2.ZERO
 		planet.position += planet.velocity * delta
 		
+	#Indica visualmente a posição do centro de massa
+	$Centro.position = center_of_mass()
+		
 func gravidade(p1, p2, delta):
-	var distance = (p2.position - p1.position).length()
-	
-	var newton_eq = G * (p1.mass * p2.mass) / (distance * distance)
-	
+	#Distância entre os dois planetas (vetor)
+	var vect_distance = p2.position - p1.position
+	#Equação de Newton (length calcula a distância somente, a hipotenusa)
+	var newton_eq = G * (p1.mass * p2.mass) / (vect_distance.length_squared())
+	#Direção da força, sem a intensidade (somente a direção)
 	var force_direction = (p2.position - p1.position).normalized()
 	
+	#Força = massa * aceleração
+	#Logo: aceleração = força / massa
+	#Calcula a aceleração em relação a cada planeta
 	var acceleration1 = force_direction * newton_eq / p1.mass
 	var acceleration2 = -force_direction * newton_eq / p2.mass
 	
+	#Movimentação dos planetas, com a aceleração
 	p1.velocity += acceleration1 * delta
 	p2.velocity += acceleration2 * delta
 	
+	#Linhas indicando aceleração e puxão gravitacional. Ajustar futuramente
 	$Planetas/Planeta1/Line2D.points = [Vector2.ZERO, acceleration1]
 	$Planetas/Planeta2/Line2D.points = [Vector2.ZERO, acceleration2]
+
+func center_of_mass():
+	#Váriaveis que armazenam o somatório dos parâmetros dos planetas presentes
+	var somatorio_massa = 0.0
+	var coordenadas = Vector2.ZERO
+	
+	for planet in planets:
+		#Posições de todos os planetas presentes
+		coordenadas = coordenadas + (planet.mass * planet.position)
+		#Somatório de todas as massas dos planetas presentes
+		somatorio_massa = somatorio_massa + planet.mass
+	
+	#Equação do centro de massa (média das posições pela massa total)
+	var coord_final = coordenadas/somatorio_massa
+	
+	#Retorna a posição
+	return coord_final
 "
 
 [node name="Node2D" type="Node2D"]
 script = SubResource("GDScript_ig7tw")
+
+[node name="Centro" parent="." instance=ExtResource("1_0xm2m")]
+modulate = Color(1, 0, 0, 1)
+position = Vector2(576, 320)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = -1
@@ -56,8 +91,8 @@ color = Color(0, 0, 0, 1)
 [node name="Planetas" type="Node2D" parent="."]
 
 [node name="Planeta1" parent="Planetas" instance=ExtResource("2_h2yge")]
-position = Vector2(640, 384)
-mass = 105
+position = Vector2(832, 384)
+mass = 750
 velocity = Vector2(-30, 30)
 
 [node name="Line2D" type="Line2D" parent="Planetas/Planeta1"]
@@ -65,7 +100,7 @@ width = 2.0
 default_color = Color(0.92549, 0, 0.678431, 1)
 
 [node name="Planeta2" parent="Planetas" instance=ExtResource("2_h2yge")]
-position = Vector2(448, 192)
+position = Vector2(384, 64)
 mass = 105
 velocity = Vector2(30, -30)
 
