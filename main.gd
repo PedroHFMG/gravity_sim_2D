@@ -2,12 +2,23 @@ extends Node2D
 
 var planets = []
 const G = 11000
+@export var camera_centralizado : bool
+
+#Variáveis p/ criação de planetas novos
+var pos = Vector2.ZERO
+var planet_scene = load("res://planet.tscn")
+var new_planet = null
 
 func _ready() -> void:
 	planets = $Planetas.get_children()
 	
 func _physics_process(delta: float) -> void:
-	#Calcula a gravidade em PARES >>sem repetição<<:
+	#Parte necessária para somar a aceleração de todos os planetas, e não somente do
+	#último par, para ser mostrada na linha rosa
+	for planet in planets:
+		planet.accumulated_acceleration = Vector2.ZERO
+
+	#Calcula a gravidade em PARES sem repetição!!!!
 	#Planeta principal do loop:
 	for i in range(planets.size()):
 		 #Planetas que terão os cálculos feitos com base no planeta principal:
@@ -15,18 +26,17 @@ func _physics_process(delta: float) -> void:
 			#Aplicando a função gravidade com os planetas dos índices acima:
 			gravidade(planets[i], planets[j], delta)
 	
-	for planet in planets:
-		if planet.get("fixed") == true:
-			planet.velocity = Vector2.ZERO
-		planet.position += planet.velocity * delta
-		
 	#Indica a posição do centro de massa
 	$Centro.position = center_of_mass()
+	
+	if camera_centralizado == true:
+		$Camera2D.enabled = true
+		$Camera2D.position = $Centro.position
 
 func gravidade(p1, p2, delta):
 	#Distância entre os dois planetas (vetor)
 	var vect_distance = p2.position - p1.position
-	#Equação de Newton (length calcula a distância somente, a hipotenusa)
+	#Equação de Newton (length calcula a distância somente, a hipotenusa), possui limitador pra evitar velocidades absurdas
 	var newton_eq = G * (p1.mass * p2.mass) / (vect_distance.length_squared() + 15)
 	#Direção da força, sem a intensidade (somente a direção)
 	var force_direction = (p2.position - p1.position).normalized()
@@ -37,13 +47,16 @@ func gravidade(p1, p2, delta):
 	var acceleration1 = force_direction * newton_eq / p1.mass
 	var acceleration2 = -force_direction * newton_eq / p2.mass
 	
+	p1.accumulated_acceleration += acceleration1
+	p2.accumulated_acceleration += acceleration2
+	
 	#Movimentação dos planetas, com a aceleração
 	p1.velocity += acceleration1 * delta
 	p2.velocity += acceleration2 * delta
 	
-	#Linhas indicando aceleração e puxão gravitacional. Ajustar futuramente
-	p1.get_node("Line2D").points = [Vector2.ZERO, acceleration1]
-	p2.get_node("Line2D").points = [Vector2.ZERO, acceleration2]
+	# Atualiza a linha de aceleração
+	p1.get_node("Line2D").points = [Vector2.ZERO, p1.accumulated_acceleration]
+	p2.get_node("Line2D").points = [Vector2.ZERO, p2.accumulated_acceleration]
 
 func center_of_mass():
 	#Váriaveis que armazenam o somatório dos parâmetros dos planetas presentes
@@ -61,3 +74,24 @@ func center_of_mass():
 	
 	#Retorna a posição
 	return coord_final
+
+func _input(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed: 
+				new_planet = planet_scene.instantiate()
+				new_planet.position = get_global_mouse_position()
+				new_planet.mass = 10
+				
+				var line = Line2D.new()
+				line.name = "Line2D"
+				line.width = 2
+				line.default_color = Color('#ec00ad')
+				new_planet.add_child(line)
+				
+			else:
+				if new_planet:
+					var velocity_new_planet = (new_planet.position - get_global_mouse_position()) 
+					new_planet.velocity = velocity_new_planet
+					$Planetas.add_child(new_planet)
+					planets.append(new_planet)
+					new_planet = null
