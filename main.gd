@@ -1,7 +1,7 @@
 extends Node2D
 
 var planets = []
-const G = 11000
+const G = 5000
 @export var camera_centralizado : bool
 
 #Variáveis p/ criação de planetas novos
@@ -28,10 +28,12 @@ func _physics_process(delta: float) -> void:
 		 #Planetas que terão os cálculos feitos com base no planeta principal:
 		for j in range(i + 1, planets.size()):
 			#Aplicando a função gravidade com os planetas dos índices acima:
-			gravidade(planets[i], planets[j], delta)
+			gravidade(planets[i], planets[j])
 	
 	for planet in planets:
+		planet.velocity += planet.accumulated_acceleration * delta
 		planet.position += planet.velocity * delta
+		planet.get_node("Line2D").points = [Vector2.ZERO, planet.accumulated_acceleration]
 		
 	#Indica a posição do centro de massa
 	$Centro.position = center_of_mass()
@@ -40,7 +42,7 @@ func _physics_process(delta: float) -> void:
 		$Camera2D.enabled = true
 		$Camera2D.position = $Centro.position
 
-func gravidade(p1, p2, delta):
+func gravidade(p1, p2):
 	#Distância entre os dois planetas (vetor)
 	var vect_distance = p2.position - p1.position
 	#Equação de Newton (length calcula a distância somente, a hipotenusa), possui limitador pra evitar velocidades absurdas
@@ -56,14 +58,6 @@ func gravidade(p1, p2, delta):
 	
 	p1.accumulated_acceleration += acceleration1
 	p2.accumulated_acceleration += acceleration2
-	
-	#Movimentação dos planetas, com a aceleração
-	p1.velocity += acceleration1 * delta
-	p2.velocity += acceleration2 * delta
-	
-	# Atualiza a linha de aceleração
-	p1.get_node("Line2D").points = [Vector2.ZERO, p1.accumulated_acceleration]
-	p2.get_node("Line2D").points = [Vector2.ZERO, p2.accumulated_acceleration]
 
 func center_of_mass():
 	#Váriaveis que armazenam o somatório dos parâmetros dos planetas presentes
