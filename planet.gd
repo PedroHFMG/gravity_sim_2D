@@ -8,5 +8,9 @@ extends Node2D
 var accumulated_acceleration = Vector2.ZERO
 
 func _process(delta):
-	#Seta que está indicando a velocidade
 	$"Polygon2D/Line-Vel".points = [Vector2.ZERO, velocity]
+	#Seta que está indicando a velocidade
+	queue_redraw()
+
+func _draw() -> void:
+	draw_circle(Vector2.ZERO, 20, Color.WHITE, true, 0, true)

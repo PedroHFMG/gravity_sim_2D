@@ -12,6 +12,10 @@ var new_planet = null
 func _ready() -> void:
 	planets = $Planetas.get_children()
 	
+func _process(delta: float) -> void:
+	if new_planet:
+		queue_redraw()
+	
 func _physics_process(delta: float) -> void:
 	#Parte necessária para somar a aceleração de todos os planetas, e não somente do
 	#último par, para ser mostrada na linha rosa
@@ -26,6 +30,9 @@ func _physics_process(delta: float) -> void:
 			#Aplicando a função gravidade com os planetas dos índices acima:
 			gravidade(planets[i], planets[j], delta)
 	
+	for planet in planets:
+		planet.position += planet.velocity * delta
+		
 	#Indica a posição do centro de massa
 	$Centro.position = center_of_mass()
 	
@@ -77,7 +84,8 @@ func center_of_mass():
 
 func _input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-			if event.pressed: 
+			if event.pressed:
+				#queue_redraw()
 				new_planet = planet_scene.instantiate()
 				new_planet.position = get_global_mouse_position()
 				new_planet.mass = 10
@@ -88,10 +96,15 @@ func _input(event: InputEvent) -> void:
 				line.default_color = Color('#ec00ad')
 				new_planet.add_child(line)
 				
+				$Planetas.add_child(new_planet)
 			else:
 				if new_planet:
 					var velocity_new_planet = (new_planet.position - get_global_mouse_position()) 
 					new_planet.velocity = velocity_new_planet
-					$Planetas.add_child(new_planet)
 					planets.append(new_planet)
 					new_planet = null
+					queue_redraw()
+
+func _draw() -> void:
+	if new_planet:
+		draw_line(new_planet.position, new_planet.position + (new_planet.position - get_global_mouse_position()), Color.RED, 1, false)
